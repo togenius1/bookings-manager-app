@@ -1,26 +1,48 @@
-import { useReducer, Fragment } from 'react';
+import { useReducer, useEffect, Fragment } from 'react';
 import { FaArrowRight } from 'react-icons/fa';
 
-import bookables from '../../static.json';
+import statics from '../../static.json';
 import reducer from './reducer';
+import Spinner from '../UI/Spinner';
+import getData from '../../utils/api';
 
 const initialState = {
     group: 'Rooms',
     bookableIndex: 0,
     hasDetails: true,
-    bookables,
+    bookables: [],
+    isLoading: true,
+    error: false,
 };
 
 export default function BookablesList() {
     const [state, dispatch] = useReducer(reducer, initialState);
 
-    const { group, bookableIndex, hasDetails, bookables } = state;
+    const { group, bookableIndex, bookables } = state;
+    const { hasDetails, isLoading, error } = state;
 
-    const bookablesInGroup = bookables.bookables.filter(
-        (b) => b.group === group
-    );
+    const bookablesInGroup = bookables.filter((b) => b.group === group);
     const bookable = bookablesInGroup[bookableIndex];
-    const groups = [...new Set(bookables.bookables.map((b) => b.group))];
+    const groups = [...new Set(bookables.map((b) => b.group))];
+    console.log(bookables);
+    useEffect(() => {
+        dispatch({ type: 'FETCH_BOOKABLES_REQUEST' });
+
+        getData('http://localhost:3001/bookables')
+            .then((bookables) =>
+                dispatch({
+                    type: 'FETCH_BOOKABLES_SUCCESS',
+                    payload: bookables,
+                })
+            )
+
+            .catch((error) =>
+                dispatch({
+                    type: 'FETCH_BOOKABLES_ERROR',
+                    payload: error,
+                })
+            );
+    }, []);
 
     function changeGroup(e) {
         dispatch({
@@ -44,6 +66,18 @@ export default function BookablesList() {
         dispatch({ type: 'TOGGLE_HAS_DETAILS' });
     }
 
+    if (error) {
+        return <p>{error.message}</p>;
+    }
+
+    if (isLoading) {
+        return (
+            <p>
+                <Spinner /> Loading bookables...
+            </p>
+        );
+    }
+
     return (
         <Fragment>
             <div>
@@ -54,6 +88,7 @@ export default function BookablesList() {
                         </option>
                     ))}
                 </select>
+
                 <ul className='bookables items-list-nav'>
                     {bookablesInGroup.map((b, i) => (
                         <li
@@ -76,6 +111,7 @@ export default function BookablesList() {
                     </button>
                 </p>
             </div>
+
             {bookable && (
                 <div className='bookable-details'>
                     <div className='item'>
@@ -92,6 +128,7 @@ export default function BookablesList() {
                                 </label>
                             </span>
                         </div>
+
                         <p>{bookable.notes}</p>
 
                         {hasDetails && (
@@ -100,13 +137,13 @@ export default function BookablesList() {
                                 <div className='bookable-availability'>
                                     <ul>
                                         {bookable.days.sort().map((d) => (
-                                            <li key={d}>{bookables.days[d]}</li>
+                                            <li key={d}>{statics.days[d]}</li>
                                         ))}
                                     </ul>
                                     <ul>
                                         {bookable.sessions.map((s) => (
                                             <li key={s}>
-                                                {bookables.sessions[s]}
+                                                {statics.sessions[s]}
                                             </li>
                                         ))}
                                     </ul>
