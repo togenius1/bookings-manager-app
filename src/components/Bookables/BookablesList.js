@@ -1,35 +1,20 @@
-import { useReducer, useEffect, useRef, Fragment } from 'react';
+import { useEffect, useRef, Fragment } from 'react';
 import { FaArrowRight } from 'react-icons/fa';
 
-import statics from '../../static.json';
-import reducer from './reducer';
 import Spinner from '../UI/Spinner';
 import getData from '../../utils/api';
 
-const initialState = {
-    group: 'Rooms',
-    bookableIndex: 0,
-    hasDetails: true,
-    bookables: [],
-    isLoading: true,
-    error: false,
-};
-
-export default function BookablesList() {
-    const [state, dispatch] = useReducer(reducer, initialState);
-
+export default function BookablesList({ state, dispatch }) {
     const { group, bookableIndex, bookables } = state;
-    const { hasDetails, isLoading, error } = state;
+    const { isLoading, error } = state;
 
     const bookablesInGroup = bookables.filter((b) => b.group === group);
-    const bookable = bookablesInGroup[bookableIndex];
     const groups = [...new Set(bookables.map((b) => b.group))];
 
     const nextButtonRef = useRef();
 
     useEffect(() => {
         dispatch({ type: 'FETCH_BOOKABLES_REQUEST' });
-
         getData('http://localhost:3001/bookables')
             .then((bookables) =>
                 dispatch({
@@ -43,7 +28,7 @@ export default function BookablesList() {
                     payload: error,
                 })
             );
-    }, []);
+    }, [dispatch]);
 
     function changeGroup(e) {
         dispatch({
@@ -118,49 +103,6 @@ export default function BookablesList() {
                     </button>
                 </p>
             </div>
-
-            {bookable && (
-                <div className='bookable-details'>
-                    <div className='item'>
-                        <div className='item-header'>
-                            <h2>{bookable.title}</h2>
-                            <span className='controls'>
-                                <label>
-                                    <input
-                                        type='checkbox'
-                                        checked={hasDetails}
-                                        onChange={toggleDetails}
-                                    />
-                                    Show Details
-                                </label>
-                              
-                            </span>
-                        </div>
-
-                        <p>{bookable.notes}</p>
-
-                        {hasDetails && (
-                            <div className='item-details'>
-                                <h3>Availability</h3>
-                                <div className='bookable-availability'>
-                                    <ul>
-                                        {bookable.days.sort().map((d) => (
-                                            <li key={d}>{statics.days[d]}</li>
-                                        ))}
-                                    </ul>
-                                    <ul>
-                                        {bookable.sessions.map((s) => (
-                                            <li key={s}>
-                                                {statics.sessions[s]}
-                                            </li>
-                                        ))}
-                                    </ul>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                </div>
-            )}
         </Fragment>
     );
 }
